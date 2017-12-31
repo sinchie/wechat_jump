@@ -15,7 +15,7 @@ import (
 )
 
 // 速度系数s
-var speed = flag.Float64("s", 1.325, "速度系数，不同手机分辨率需要多次尝试")
+var speed = flag.Float64("s", 1.32, "速度系数，不同手机分辨率需要多次尝试")
 // 执行次数
 var count = 0
 
@@ -82,11 +82,10 @@ func findMe(img image.Image) ([2]int, error) {
 	size := img.Bounds().Size()
 	// 上方空白区域高度 TODO
 	top := size.Y / 4 - 100
-	// 保存结果
-	res := [2]int{}
 	// 小人的默认RGB颜色
 	meColor := [3]int{54, 52, 92}
 	// 找寻坐标
+	points := [][3]int{}
 	for y := top; y < size.Y; y++ {
 		line := 0 // 颜色匹配宽度
 		for x := 0; x < size.X; x++ {
@@ -95,15 +94,24 @@ func findMe(img image.Image) ([2]int, error) {
 				line++
 			} else {
 				if x-line > 10 && line > 30 {
-					res[0] = x - line/2
-					res[1] = y
-					return res, nil
+					points = append(points, [3]int{x - line/2, y, line})
 				}
 				line = 0
 			}
 		}
 	}
-	return res, fmt.Errorf("not found me point")
+	if len(points) == 0 {
+		return [2]int{}, fmt.Errorf("not found me point")
+	}
+	// 找到合适的坐标
+	temp := [3]int{0,0,0}
+	for _, v := range points {
+		if v[2] > temp[2] {
+			temp = v
+		}
+	}
+
+	return [2]int{temp[0], temp[1]}, nil
 }
 
 // 获得目标坐标
@@ -126,7 +134,7 @@ func findTarget(img image.Image, mePoint [2]int) ([2]int, error) {
 				line++
 			} else {
 				if x-line > 10 && // 不是在屏幕最左边
-					line > 36 &&  // 匹配平台宽度大于35
+					line > 36 &&  // 匹配平台宽度大于36
 						((x-line/2) < (mePoint[0]-20) || (x-line/2) > (mePoint[0]+20)) { // 和小人的x点不重合
 					res[0] = x - line/2
 					res[1] = y
