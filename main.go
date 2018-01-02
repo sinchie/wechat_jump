@@ -12,6 +12,7 @@ import (
 	"math"
 	"flag"
 	"image/color"
+	"math/rand"
 )
 
 // 速度系数s
@@ -33,6 +34,7 @@ func screenshot() (image.Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open wxjump.png fail: %v",err.Error())
 	}
+	defer f.Close()
 	img, err := png.Decode(f)
 	if err != nil {
 		return nil, fmt.Errorf("decode wxjump.png fail: %v",err.Error())
@@ -156,9 +158,22 @@ func getPressTime(me, target [2]int) int {
 	return int(time)
 }
 
+// 获得指定范围随机数字
+func getRandInt(min int, max int) int {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return min + r.Intn(max-min)
+}
+
 // 模拟按压操作
-func press(time int) error {
-	_, err := exec.Command("adb", "shell", "input", "swipe", "310", "400", "310", "400", strconv.Itoa(time)).Output()
+func press(t int) error {
+	r1num := getRandInt(1,100)
+	x1 := 300+r1num
+	y1 := 400+r1num
+	r2num := getRandInt(1,100)
+	x2 := 300+r2num
+	y2 := 400+r2num
+
+	err := exec.Command("adb", "shell", "input", "swipe", strconv.Itoa(x1), strconv.Itoa(y1), strconv.Itoa(x2), strconv.Itoa(y2), strconv.Itoa(t)).Run()
 	if err != nil {
 		return fmt.Errorf("press fail:%v", err.Error())
 	}
